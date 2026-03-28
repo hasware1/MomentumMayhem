@@ -1,0 +1,31 @@
+# Momentum Mayhem
+
+A momentum based Minecraft minigame where **everything is changing**. Go ahead and YEET your opponents (or run from them), also the gravity,speed and even the floor are changing ;)
+
+## Gameplay
+- **YEET Stick:** The meme stick that deals crazy (or should i say MASSIVE) knockback. Every player gets a randomly named stick 
+- **Recoil** - Basically newtons third law
+- **Disasters** - Every 30-60 seconds, something changes:
+  - Low Gravity
+  - High Gravity
+  - Low Speed
+  - High Speed
+  - Floor Swap
+  - Shrinking Ground
+- **Last Player Standing** wins!
+
+## How to Play
+1. Join the server (no mods needed on client!)
+2. Wait in the floating lobby
+3. Press the start button when enough players are ready
+4. Get your random YEET stick and colored armor
+5. Survive the chaos!
+
+## Setup
+1. Install FabricMC for Minecraft 1.21.11
+2. Place the mod in your "mods" folder
+3. Start the server
+4. 
+
+## 📜 License
+MIT
