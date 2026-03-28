@@ -1,29 +1,9 @@
 # Momentum Mayhem
 
-A momentum based Minecraft minigame where **everything is changing**. Go ahead and YEET your opponents (or run from them). Also the gravity, speed and even the floor are changing ;)
+Momentum Mayhem is momentum based minecraft minigame where "everything is changing". Players are thrown into an arena and must fight to be the last one standing while the game unleashes random disasters that alter gravity, speed, and even the floor beneath you.
 
-## Gameplay
-- **YEET Stick:** The meme stick that deals crazy (or should i say MASSIVE) knockback. Every player gets a randomly named stick
-- **Recoil** - Basically newtons third law
-- **Disasters** - Every 30-60 seconds, something changes:
-    - Low Gravity ☁️
-    - High Gravity ⬇️
-    - Low Speed 🐢
-    - High Speed 💨
-    - Floor Swap (idk emoji for ts)
-    - Shrinking Ground ⚠️
-- **Last Player Standing** wins!
+It supports any amount of players. More players = more chaos!
 
-## How to Play
-1. Join the server (no mods needed on client)
-2. Spawn and wait in the floating lobby 
-3. Press the start button when enough players (2 or more) are ready
-4. Get your random ahh YEET stick
-5. Hunt other players (or try not to get hunted 😭)
+To play, download this [mod](https://github.com/hasware1/MomentumMayhem) and [world]()
 
-## Setup
-1. Install FabricMC for Minecraft 1.21.11
-2. Place the mod in your "mods" folder
-3. Start the server
-4. It is preferred that you use the default arena
-5. If you don't wanna use the default arena, change the coords in GameConfig.java
+Upon joining players will be placed in a lobby, press the start button to start the game. Last one standing wins!
