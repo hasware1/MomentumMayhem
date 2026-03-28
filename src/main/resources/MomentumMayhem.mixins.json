@@ -3,12 +3,6 @@
   "package": "MomentumMayhem.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "AutoIgniteTNT",
-    "CreeperAccessor",
-    "ExplosionMixin",
-    "ItemDespawnMixin",
-    "LessDamageMixin",
-    "NoFireMixin"
   ],
   "injectors": {
     "defaultRequire": 1

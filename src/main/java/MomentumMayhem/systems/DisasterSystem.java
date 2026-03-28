@@ -2,14 +2,15 @@ package MomentumMayhem.systems;
 
 import MomentumMayhem.game.GameManager;
 import MomentumMayhem.util.TaskScheduler;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
@@ -30,6 +31,7 @@ public class DisasterSystem {
         disasters.put("Low Speed", DisasterSystem::lowSpeed);
         disasters.put("High Speed", DisasterSystem::highSpeed);
         disasters.put("Floor Swap", DisasterSystem::floorSwap);
+        disasters.put("Shrinking Arena", DisasterSystem::shrinkGround);
     }
 
 
@@ -83,17 +85,19 @@ public class DisasterSystem {
         });
     }
     private static void lowGravity() {
-        if (state != GameState.RUNNING) {
-            return;
-        }
+        if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.JUMP_BOOST, 10 * 20, 4, false, false));
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.SLOW_FALLING, 10 * 20, 0, false, false));
-                player.sendMessage(Text.literal(" LOW GRAVITY! ")
+                // Set a custom gravity value (lower = less gravity)
+                player.setNoGravity(true);
+
+                // Schedule a task to restore normal gravity
+                TaskScheduler.schedule((int x) -> {
+                    player.setNoGravity(false);
+                }, 10 * 20, 1, false, null);
+
+                player.sendMessage(Text.literal("☁️ LOW GRAVITY! ☁️")
                         .formatted(Formatting.AQUA, Formatting.BOLD), true);
                 sendSound(player, SoundEvents.ENTITY_PLAYER_TELEPORT);
             }
@@ -101,18 +105,18 @@ public class DisasterSystem {
     }
 
     private static void highGravity() {
-        if (state != GameState.RUNNING) {
-            return;
-        }
+        if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.removeStatusEffect(StatusEffects.JUMP_BOOST);
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.MINING_FATIGUE, 10 * 20, 2, false, false));
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.SLOWNESS, 10 * 20, 0, false, false));
-                player.sendMessage(Text.literal(" HIGH GRAVITY! ️")
+                // Apply downward velocity every tick during the disaster
+                TaskScheduler.schedule((int x) -> {
+                    if (state == GameState.RUNNING && activePlayers.contains(uuid)) {
+                        player.addVelocity(0, -0.3, 0);
+                    }
+                }, 0, 10 * 20, true, null);
+
+                player.sendMessage(Text.literal(" HIGH GRAVITY! ")
                         .formatted(Formatting.DARK_RED, Formatting.BOLD), true);
                 sendSound(player, SoundEvents.BLOCK_ANVIL_LAND);
             }
@@ -120,30 +124,54 @@ public class DisasterSystem {
     }
 
     private static void lowSpeed() {
-        if (state != GameState.RUNNING) {
-            return;
-        }
+        if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.SLOWNESS, 10 * 20, 3, false, false));
+                var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+                if (speedAttribute != null) {
+                    // Create the modifier
+                    EntityAttributeModifier modifier = new EntityAttributeModifier(
+                            Identifier.of("momentum_mayhem", "low_speed"),
+                            -0.7,
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                    );
+
+                    // Apply the modifier
+                    speedAttribute.addTemporaryModifier(modifier);
+
+                    // Remove after 10 seconds by passing the modifier directly
+                    TaskScheduler.schedule((int x) -> {
+                        speedAttribute.removeModifier(modifier);
+                    }, 10 * 20, 1, false, null);
+                }
+
                 player.sendMessage(Text.literal(" LOW SPEED! ")
                         .formatted(Formatting.GRAY, Formatting.BOLD), true);
                 sendSound(player, SoundEvents.ENTITY_TURTLE_EGG_HATCH);
             }
         }
     }
-
     private static void highSpeed() {
-        if (state != GameState.RUNNING) {
-            return;
-        }
+        if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.addStatusEffect(new StatusEffectInstance(
-                        StatusEffects.SPEED, 10 * 20, 3, false, false));
+                var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+                if (speedAttribute != null) {
+                    EntityAttributeModifier modifier = new EntityAttributeModifier(
+                            Identifier.of("momentum_mayhem", "high_speed"),
+                            0.7,
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                    );
+
+                    speedAttribute.addTemporaryModifier(modifier);
+
+                    TaskScheduler.schedule((int x) -> {
+                        speedAttribute.removeModifier(modifier);
+                    }, 10 * 20, 1, false, null);
+                }
+
                 player.sendMessage(Text.literal(" HIGH SPEED! ")
                         .formatted(Formatting.GREEN, Formatting.BOLD), true);
                 sendSound(player, SoundEvents.ENTITY_HORSE_GALLOP);
@@ -201,5 +229,111 @@ public class DisasterSystem {
         }
 
         System.out.println("Floor Swap: Changed " + changedBlocks + " blocks to " + materialName);
+    }
+    private static int shrinkCount = 0;
+    private static int currentMinX, currentMaxX, currentMinZ, currentMaxZ;
+
+    private static void shrinkGround() {
+        if (state != GameState.RUNNING) return;
+
+        // Initialize current bounds on first shrink
+        if (shrinkCount == 0) {
+            currentMinX = GROUND_MIN.getX();
+            currentMaxX = GROUND_MAX.getX();
+            currentMinZ = GROUND_MIN.getZ();
+            currentMaxZ = GROUND_MAX.getZ();
+        }
+
+        shrinkCount++;
+
+        // Shrink by 1 block from each side
+        int newMinX = currentMinX + 1;
+        int newMaxX = currentMaxX - 1;
+        int newMinZ = currentMinZ + 1;
+        int newMaxZ = currentMaxZ - 1;
+
+        // Check if ground is too small
+        if (newMaxX - newMinX < 3 || newMaxZ - newMinZ < 3) {
+            for (UUID uuid : activePlayers) {
+                ServerPlayerEntity player = getPlayer(uuid);
+                if (player != null) {
+                    player.sendMessage(Text.literal("SUDDEN DEATH! Final stand!")
+                            .formatted(Formatting.DARK_RED, Formatting.BOLD), true);
+                    sendSound(player, SoundEvents.ENTITY_WITHER_SPAWN);
+                }
+            }
+            return;
+        }
+
+        // Remove the outer ring of ground blocks
+        for (int x = currentMinX; x <= currentMaxX; x++) {
+            for (int z = currentMinZ; z <= currentMaxZ; z++) {
+                // Check if this block is on the border
+                boolean isOnBorder = x == currentMinX || x == currentMaxX ||
+                        z == currentMinZ || z == currentMaxZ;
+
+                if (isOnBorder) {
+                    // Remove blocks at ground level
+                    for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
+                        BlockPos pos = new BlockPos(x, y, z);
+                        if (!getWorld().getBlockState(pos).isAir()) {
+                            getWorld().setBlockState(pos, Blocks.AIR.getDefaultState(), 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update current bounds
+        currentMinX = newMinX;
+        currentMaxX = newMaxX;
+        currentMinZ = newMinZ;
+        currentMaxZ = newMaxZ;
+
+        // Add a warning border (red glass) to show new edge
+        for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
+            // Draw border on new edges
+            for (int x = currentMinX; x <= currentMaxX; x++) {
+                BlockPos frontEdge = new BlockPos(x, y, currentMinZ);
+                BlockPos backEdge = new BlockPos(x, y, currentMaxZ);
+                if (getWorld().getBlockState(frontEdge).isAir()) {
+                    getWorld().setBlockState(frontEdge, Blocks.RED_STAINED_GLASS.getDefaultState(), 2);
+                }
+                if (getWorld().getBlockState(backEdge).isAir()) {
+                    getWorld().setBlockState(backEdge, Blocks.RED_STAINED_GLASS.getDefaultState(), 2);
+                }
+            }
+
+            for (int z = currentMinZ; z <= currentMaxZ; z++) {
+                BlockPos leftEdge = new BlockPos(currentMinX, y, z);
+                BlockPos rightEdge = new BlockPos(currentMaxX, y, z);
+                if (getWorld().getBlockState(leftEdge).isAir()) {
+                    getWorld().setBlockState(leftEdge, Blocks.RED_STAINED_GLASS.getDefaultState(), 2);
+                }
+                if (getWorld().getBlockState(rightEdge).isAir()) {
+                    getWorld().setBlockState(rightEdge, Blocks.RED_STAINED_GLASS.getDefaultState(), 2);
+                }
+            }
+        }
+
+        // Send warning to players
+        for (UUID uuid : activePlayers) {
+            ServerPlayerEntity player = getPlayer(uuid);
+            if (player != null) {
+                player.sendMessage(Text.literal("GROUND SHRINKING! " + shrinkCount + " layers removed!")
+                        .formatted(Formatting.RED, Formatting.BOLD), true);
+                sendSound(player, SoundEvents.BLOCK_ANVIL_LAND);
+            }
+        }
+
+        System.out.println("Ground shrunk to: X[" + currentMinX + " to " + currentMaxX +
+                "] Z[" + currentMinZ + " to " + currentMaxZ + "]");
+    }
+    public static void resetShrink() {
+        shrinkCount = 0;
+        currentMinX = GROUND_MIN.getX();
+        currentMaxX = GROUND_MAX.getX();
+        currentMinZ = GROUND_MIN.getZ();
+        currentMaxZ = GROUND_MAX.getZ();
     }
 }

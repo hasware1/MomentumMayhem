@@ -79,9 +79,17 @@ public class Events {
             BlockPos pos = hitResult.getBlockPos();
             if (pos.equals(GameConfig.START_BUTTON) && world.getBlockState(pos).getBlock() == Blocks.WARPED_BUTTON && !world.getBlockState(pos).get(Properties.POWERED)){
                 if (state != GameState.WAITING) {
-                    player.sendMessage(Text.literal("Game is already running").formatted(Formatting.RED), true);
+                    // Cast player to ServerPlayerEntity
+                    ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+                    sendTitle(serverPlayer, "GAME ALREADY RUNNING!", Formatting.GREEN);
+                    sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
                 } else if (players.size() < MIN_PLAYERS) {
-                    player.sendMessage(Text.literal("Not enough players!").formatted(Formatting.RED), true);
+                    ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+                    sendTitle(serverPlayer, "NOT ENOUGH PLAYERS!", Formatting.RED);
+                    sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
+                    // Also show required count in action bar
+                    serverPlayer.sendMessage(Text.literal("Need " + MIN_PLAYERS + " players to start. Current: " + players.size())
+                            .formatted(Formatting.YELLOW), true);
                 } else {
                     state = GameState.STARTING;
                     TaskScheduler.schedule((int x) -> {

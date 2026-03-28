@@ -2,7 +2,6 @@ package MomentumMayhem.game;
 
 
 import MomentumMayhem.systems.DisasterSystem;
-import MomentumMayhem.systems.GroundDecay;
 import MomentumMayhem.systems.ItemBuilder;
 import MomentumMayhem.util.TaskScheduler;
 import MomentumMayhem.util.TaskScheduler.ScheduledTask;
@@ -120,7 +119,6 @@ public class GameManager {
         resetArena();
         clearAllEntities();
         DisasterSystem.start();
-        GroundDecay.start();
         int i = 0;
         for (UUID uuid : players) {
             double angle = 2 * Math.PI * i / players.size();
@@ -138,7 +136,6 @@ public class GameManager {
     public static void endGame() {
         state = GameState.ENDING;
         TaskScheduler.remove(timeLimitTask);
-        GroundDecay.stop();
         DisasterSystem.stop();
         clearAllEntities();
 
@@ -202,7 +199,23 @@ public class GameManager {
         player.equipStack(EquipmentSlot.CHEST,  new ItemBuilder(Items.LEATHER_CHESTPLATE, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
         player.equipStack(EquipmentSlot.LEGS,  new ItemBuilder(Items.LEATHER_LEGGINGS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
         player.equipStack(EquipmentSlot.FEET,  new ItemBuilder(Items.LEATHER_BOOTS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
-        player.equipStack(EquipmentSlot.MAINHAND, new ItemBuilder(Items.STICK, 1).name("Yeet", Formatting.GREEN).withEnchant(Enchantments.KNOCKBACK, 10).maxDura(30).build());}
+
+        // Random name stick
+        List<String> names = List.of(
+                "Yeet", "Bonk", "Boop", "WACK", "Fling",
+                "YEETUS", "Bye Bye", "See Ya", "Vroom",
+                "Zoom", "Bam", "Pow", "Woosh", "Fwoosh",
+                "Adios", "Cya", "Boing", "Swoosh", "Yeetus Deletus"
+        );
+
+        String randomName = names.get(new Random().nextInt(names.size()));
+
+        player.equipStack(EquipmentSlot.MAINHAND, new ItemBuilder(Items.STICK, 1)
+                .name(randomName, Formatting.GREEN)
+                .withEnchant(Enchantments.KNOCKBACK, 3)
+                .maxDura(30)
+                .build());
+    }
 
     public static void toLobby(ServerPlayerEntity player) {
         activePlayers.remove(player.getUuid());
