@@ -106,7 +106,6 @@ public class GameManager {
         currentTick = 0;
         state = GameState.RUNNING;
 
-        // Play start sound and show title for all players
         for (UUID uuid : players) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
@@ -200,7 +199,6 @@ public class GameManager {
         player.equipStack(EquipmentSlot.LEGS,  new ItemBuilder(Items.LEATHER_LEGGINGS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
         player.equipStack(EquipmentSlot.FEET,  new ItemBuilder(Items.LEATHER_BOOTS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
 
-        // Random name stick
         List<String> names = List.of(
                 "Yeet", "Bonk", "Boop", "WACK", "Fling",
                 "YEETUS", "Bye Bye", "See Ya", "Vroom",

@@ -8,7 +8,9 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageTypes;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
@@ -78,8 +80,15 @@ public class Events {
             }
             BlockPos pos = hitResult.getBlockPos();
             if (pos.equals(GameConfig.START_BUTTON) && world.getBlockState(pos).getBlock() == Blocks.WARPED_BUTTON && !world.getBlockState(pos).get(Properties.POWERED)){
+                ServerWorld serverWorld = (ServerWorld) world;
+                serverWorld.spawnParticles(
+                        ParticleTypes.FLAME,
+                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                        30,
+                        0.3, 0.3, 0.3,
+                        0.05
+                );
                 if (state != GameState.WAITING) {
-                    // Cast player to ServerPlayerEntity
                     ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
                     sendTitle(serverPlayer, "GAME ALREADY RUNNING!", Formatting.GREEN);
                     sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
@@ -87,7 +96,6 @@ public class Events {
                     ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
                     sendTitle(serverPlayer, "NOT ENOUGH PLAYERS!", Formatting.RED);
                     sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
-                    // Also show required count in action bar
                     serverPlayer.sendMessage(Text.literal("Need " + MIN_PLAYERS + " players to start. Current: " + players.size())
                             .formatted(Formatting.YELLOW), true);
                 } else {

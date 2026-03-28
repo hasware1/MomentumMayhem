@@ -89,10 +89,8 @@ public class DisasterSystem {
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                // Set a custom gravity value (lower = less gravity)
                 player.setNoGravity(true);
 
-                // Schedule a task to restore normal gravity
                 TaskScheduler.schedule((int x) -> {
                     player.setNoGravity(false);
                 }, 10 * 20, 1, false, null);
@@ -109,7 +107,6 @@ public class DisasterSystem {
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                // Apply downward velocity every tick during the disaster
                 TaskScheduler.schedule((int x) -> {
                     if (state == GameState.RUNNING && activePlayers.contains(uuid)) {
                         player.addVelocity(0, -0.3, 0);
@@ -130,17 +127,14 @@ public class DisasterSystem {
             if (player != null) {
                 var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
                 if (speedAttribute != null) {
-                    // Create the modifier
                     EntityAttributeModifier modifier = new EntityAttributeModifier(
                             Identifier.of("momentum_mayhem", "low_speed"),
                             -0.7,
                             EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
                     );
 
-                    // Apply the modifier
                     speedAttribute.addTemporaryModifier(modifier);
 
-                    // Remove after 10 seconds by passing the modifier directly
                     TaskScheduler.schedule((int x) -> {
                         speedAttribute.removeModifier(modifier);
                     }, 10 * 20, 1, false, null);
@@ -189,19 +183,16 @@ public class DisasterSystem {
                 Blocks.HONEY_BLOCK,
                 Blocks.SOUL_SAND,
                 Blocks.MAGMA_BLOCK,
-                Blocks.COBWEB,
                 Blocks.PACKED_ICE,
                 Blocks.BLUE_ICE,
                 Blocks.OBSIDIAN
         );
 
         Map<Block, String> materialNames = Map.of(
-                Blocks.ICE, "Ice",
                 Blocks.SLIME_BLOCK, "Slime",
                 Blocks.HONEY_BLOCK, "Honey",
                 Blocks.SOUL_SAND, "Soul Sand",
                 Blocks.MAGMA_BLOCK, "Magma",
-                Blocks.COBWEB, "Cobweb",
                 Blocks.PACKED_ICE, "Packed Ice",
                 Blocks.BLUE_ICE, "Blue Ice",
                 Blocks.OBSIDIAN, "Obsidian"
@@ -236,7 +227,6 @@ public class DisasterSystem {
     private static void shrinkGround() {
         if (state != GameState.RUNNING) return;
 
-        // Initialize current bounds on first shrink
         if (shrinkCount == 0) {
             currentMinX = GROUND_MIN.getX();
             currentMaxX = GROUND_MAX.getX();
@@ -246,13 +236,11 @@ public class DisasterSystem {
 
         shrinkCount++;
 
-        // Shrink by 1 block from each side
         int newMinX = currentMinX + 1;
         int newMaxX = currentMaxX - 1;
         int newMinZ = currentMinZ + 1;
         int newMaxZ = currentMaxZ - 1;
 
-        // Check if ground is too small
         if (newMaxX - newMinX < 3 || newMaxZ - newMinZ < 3) {
             for (UUID uuid : activePlayers) {
                 ServerPlayerEntity player = getPlayer(uuid);
@@ -265,15 +253,12 @@ public class DisasterSystem {
             return;
         }
 
-        // Remove the outer ring of ground blocks
         for (int x = currentMinX; x <= currentMaxX; x++) {
             for (int z = currentMinZ; z <= currentMaxZ; z++) {
-                // Check if this block is on the border
                 boolean isOnBorder = x == currentMinX || x == currentMaxX ||
                         z == currentMinZ || z == currentMaxZ;
 
                 if (isOnBorder) {
-                    // Remove blocks at ground level
                     for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
                         BlockPos pos = new BlockPos(x, y, z);
                         if (!getWorld().getBlockState(pos).isAir()) {
@@ -284,15 +269,12 @@ public class DisasterSystem {
             }
         }
 
-        // Update current bounds
         currentMinX = newMinX;
         currentMaxX = newMaxX;
         currentMinZ = newMinZ;
         currentMaxZ = newMaxZ;
 
-        // Add a warning border (red glass) to show new edge
         for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
-            // Draw border on new edges
             for (int x = currentMinX; x <= currentMaxX; x++) {
                 BlockPos frontEdge = new BlockPos(x, y, currentMinZ);
                 BlockPos backEdge = new BlockPos(x, y, currentMaxZ);
@@ -316,7 +298,6 @@ public class DisasterSystem {
             }
         }
 
-        // Send warning to players
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {

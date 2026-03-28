@@ -25,9 +25,6 @@ public class GameConfig {
     public static final int MAX_TIME = 15 * 60 * 20;
 
     public static final List<Block> BREAKABLE_BLOCKS = List.of(
-            Blocks.FIRE,
-            Blocks.COBBLESTONE,
-            Blocks.COBWEB
+            Blocks.FIRE
     );
-
 }

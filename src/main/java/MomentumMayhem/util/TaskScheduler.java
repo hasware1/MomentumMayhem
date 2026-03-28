@@ -14,7 +14,7 @@ public class TaskScheduler {
         ServerTickEvents.START_SERVER_TICK.register(server -> tick());
     }
 
-    public static ScheduledTask schedule(IntConsumer runnable, int delayTicks, int runs, boolean runFirst, Runnable onEnd) { //set runs to a negative value for infinite runs
+    public static ScheduledTask schedule(IntConsumer runnable, int delayTicks, int runs, boolean runFirst, Runnable onEnd) {
         if (runFirst){runs--;}
         ScheduledTask task = new ScheduledTask(runnable, delayTicks, runs,  runFirst, onEnd);
         tasks.add(task);
