@@ -1,0 +1,30 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 19741,
+      "minecraft:walk_one_cm": 68277,
+      "minecraft:leave_game": 1,
+      "minecraft:damage_taken": 90,
+      "minecraft:play_time": 19741,
+      "minecraft:jump": 46,
+      "minecraft:time_since_death": 19741,
+      "minecraft:sprint_one_cm": 23749,
+      "minecraft:fall_one_cm": 1277,
+      "minecraft:total_world_time": 25919,
+      "minecraft:fly_one_cm": 237973,
+      "minecraft:crouch_one_cm": 4358,
+      "minecraft:sneak_time": 1424
+    },
+    "minecraft:used": {
+      "minecraft:stone": 624,
+      "minecraft:diamond_block": 1,
+      "minecraft:glass": 83,
+      "minecraft:warped_button": 1,
+      "minecraft:iron_block": 12,
+      "minecraft:glow_ink_sac": 2,
+      "minecraft:gold_block": 4,
+      "minecraft:crimson_sign": 2
+    }
+  },
+  "DataVersion": 4671
+}

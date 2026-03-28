@@ -1,0 +1,39 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 22410,
+      "minecraft:walk_one_cm": 84948,
+      "minecraft:leave_game": 7,
+      "minecraft:damage_taken": 200392,
+      "minecraft:damage_dealt": 193,
+      "minecraft:play_time": 79886,
+      "minecraft:jump": 645,
+      "minecraft:time_since_death": 22409,
+      "minecraft:sprint_one_cm": 106027,
+      "minecraft:fall_one_cm": 3330491,
+      "minecraft:total_world_time": 99954,
+      "minecraft:fly_one_cm": 496696,
+      "minecraft:walk_on_water_one_cm": 2112,
+      "minecraft:crouch_one_cm": 1319,
+      "minecraft:sneak_time": 1336,
+      "minecraft:deaths": 4
+    },
+    "minecraft:broken": {
+      "minecraft:leather_leggings": 1,
+      "minecraft:leather_helmet": 1,
+      "minecraft:leather_boots": 1,
+      "minecraft:leather_chestplate": 1
+    },
+    "minecraft:killed_by": {
+      "minecraft:player": 2
+    },
+    "minecraft:used": {
+      "minecraft:stone": 3,
+      "minecraft:barrier": 2,
+      "minecraft:gold_block": 1,
+      "minecraft:white_wool": 1,
+      "minecraft:pink_terracotta": 5
+    }
+  },
+  "DataVersion": 4671
+}
