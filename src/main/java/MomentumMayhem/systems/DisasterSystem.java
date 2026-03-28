@@ -8,7 +8,6 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -36,7 +35,6 @@ public class DisasterSystem {
         disasters.put("Shrinking Arena", DisasterSystem::shrinkGround);
     }
 
-
     public static void start() {
         stop();
         delayTask = TaskScheduler.schedule(x -> disasterTask = TaskScheduler.schedule(DisasterSystem::disasterSystemTick, 300, -1, true, null), 30 * 20, 1, false, null);
@@ -56,9 +54,9 @@ public class DisasterSystem {
         }
     }
 
-    public static void countdownDisaster(String name, Runnable disaster){
+    public static void countdownDisaster(String name, Runnable disaster) {
         TaskScheduler.schedule((int x) -> {
-            for (UUID uuid: activePlayers) {
+            for (UUID uuid : activePlayers) {
                 ServerPlayerEntity player = getPlayer(uuid);
                 if (player != null) {
                     if (x == 4) {
@@ -79,9 +77,7 @@ public class DisasterSystem {
         }, 20, 5, true, () -> {
             disaster.run();
             GameManager.showDisaster(name);
-            TaskScheduler.schedule((int y) -> {
-                GameManager.clearDisaster();
-            }, 10 * 20, 1, false, null);
+            TaskScheduler.schedule((int y) -> GameManager.clearDisaster(), 20 * 20, 1, false, null);
         });
     }
 
@@ -91,13 +87,18 @@ public class DisasterSystem {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
                 player.setNoGravity(true);
+
                 TaskScheduler.schedule((int x) -> {
-                    player.setNoGravity(false);
-                }, 10 * 20, 1, false, null);
+                    if (state == GameState.RUNNING && activePlayers.contains(uuid)) {
+                        player.addVelocity(0, 0.15, 0);
+                    }
+                }, 0, 20 * 20, true, null);
+
+                TaskScheduler.schedule((int x) -> player.setNoGravity(false), 20 * 20, 1, false, null);
 
                 getWorld().spawnParticles(ParticleTypes.CLOUD,
                         player.getX(), player.getY() + 0.5, player.getZ(),
-                        20, 0.5, 1.0, 0.5, 0.05);
+                        40, 0.8, 1.5, 0.8, 0.1);
 
                 sendTitle(player, "LOW GRAVITY", Formatting.AQUA);
                 sendSound(player, SoundEvents.ENTITY_PLAYER_TELEPORT);
@@ -112,13 +113,24 @@ public class DisasterSystem {
             if (player != null) {
                 TaskScheduler.schedule((int x) -> {
                     if (state == GameState.RUNNING && activePlayers.contains(uuid)) {
-                        player.addVelocity(0, -0.3, 0);
+                        player.addVelocity(0, -0.7, 0);
                     }
-                }, 0, 10 * 20, true, null);
+                }, 0, 20 * 20, true, null);
 
-                getWorld().spawnParticles(new BlockStateParticleEffect(ParticleTypes.FALLING_DUST, Blocks.SAND.getDefaultState()),
+                var jumpAttribute = player.getAttributeInstance(EntityAttributes.JUMP_STRENGTH);
+                if (jumpAttribute != null) {
+                    EntityAttributeModifier jumpModifier = new EntityAttributeModifier(
+                            Identifier.of("MomentumMayhem", "high_gravity_jump"),
+                            -0.6,
+                            EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                    );
+                    jumpAttribute.addTemporaryModifier(jumpModifier);
+                    TaskScheduler.schedule((int x) -> jumpAttribute.removeModifier(jumpModifier), 20 * 20, 1, false, null);
+                }
+
+                getWorld().spawnParticles(new BlockStateParticleEffect(ParticleTypes.FALLING_DUST, Blocks.ANVIL.getDefaultState()),
                         player.getX(), player.getY() + 1.0, player.getZ(),
-                        15, 0.3, 0.5, 0.3, 0.1);
+                        30, 0.5, 1.0, 0.5, 0.15);
 
                 sendTitle(player, "HIGH GRAVITY", Formatting.DARK_RED);
                 sendSound(player, SoundEvents.BLOCK_ANVIL_LAND);
@@ -134,19 +146,17 @@ public class DisasterSystem {
                 var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
                 if (speedAttribute != null) {
                     EntityAttributeModifier modifier = new EntityAttributeModifier(
-                            Identifier.of("momentum_mayhem", "low_speed"),
-                            -0.7,
+                            Identifier.of("MomentumMayhem", "low_speed"),
+                            -0.85,
                             EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
                     );
                     speedAttribute.addTemporaryModifier(modifier);
-                    TaskScheduler.schedule((int x) -> {
-                        speedAttribute.removeModifier(modifier);
-                    }, 10 * 20, 1, false, null);
+                    TaskScheduler.schedule((int x) -> speedAttribute.removeModifier(modifier), 20 * 20, 1, false, null);
                 }
 
-                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                getWorld().spawnParticles(ParticleTypes.ITEM_COBWEB,
                         player.getX(), player.getY() + 0.2, player.getZ(),
-                        10, 0.3, 0.1, 0.3, 0.02);
+                        25, 0.5, 0.2, 0.5, 0.05);
 
                 sendTitle(player, "LOW SPEED", Formatting.GRAY);
                 sendSound(player, SoundEvents.ENTITY_TURTLE_EGG_HATCH);
@@ -162,19 +172,17 @@ public class DisasterSystem {
                 var speedAttribute = player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
                 if (speedAttribute != null) {
                     EntityAttributeModifier modifier = new EntityAttributeModifier(
-                            Identifier.of("momentum_mayhem", "high_speed"),
-                            0.7,
+                            Identifier.of("MomentumMayhem", "high_speed"),
+                            1.2,
                             EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
                     );
                     speedAttribute.addTemporaryModifier(modifier);
-                    TaskScheduler.schedule((int x) -> {
-                        speedAttribute.removeModifier(modifier);
-                    }, 10 * 20, 1, false, null);
+                    TaskScheduler.schedule((int x) -> speedAttribute.removeModifier(modifier), 20 * 20, 1, false, null);
                 }
 
                 getWorld().spawnParticles(ParticleTypes.SWEEP_ATTACK,
-                        player.getX() - player.getVelocity().x, player.getY() + 0.5, player.getZ() - player.getVelocity().z,
-                        3, 0.2, 0.2, 0.2, 0);
+                        player.getX() - player.getVelocity().x * 2, player.getY() + 0.5, player.getZ() - player.getVelocity().z * 2,
+                        8, 0.3, 0.3, 0.3, 0);
 
                 sendTitle(player, "HIGH SPEED", Formatting.GREEN);
                 sendSound(player, SoundEvents.ENTITY_HORSE_GALLOP);
@@ -183,9 +191,7 @@ public class DisasterSystem {
     }
 
     private static void floorSwap() {
-        if (state != GameState.RUNNING) {
-            return;
-        }
+        if (state != GameState.RUNNING) return;
 
         List<Block> materials = List.of(
                 Blocks.SLIME_BLOCK,
@@ -194,7 +200,9 @@ public class DisasterSystem {
                 Blocks.MAGMA_BLOCK,
                 Blocks.PACKED_ICE,
                 Blocks.BLUE_ICE,
-                Blocks.OBSIDIAN
+                Blocks.OBSIDIAN,
+                Blocks.TNT,
+                Blocks.COBWEB
         );
 
         Map<Block, String> materialNames = Map.of(
@@ -204,7 +212,9 @@ public class DisasterSystem {
                 Blocks.MAGMA_BLOCK, "Magma",
                 Blocks.PACKED_ICE, "Packed Ice",
                 Blocks.BLUE_ICE, "Blue Ice",
-                Blocks.OBSIDIAN, "Obsidian"
+                Blocks.OBSIDIAN, "Obsidian",
+                Blocks.TNT, "TNT",
+                Blocks.COBWEB, "Cobweb"
         );
 
         Block randomMaterial = materials.get(new Random().nextInt(materials.size()));
@@ -213,7 +223,7 @@ public class DisasterSystem {
         int changedBlocks = 0;
 
         for (BlockPos pos : BlockPos.iterate(GROUND_MIN, GROUND_MAX)) {
-            if (Math.random() < 0.4) {
+            if (Math.random() < 0.6) {
                 getWorld().setBlockState(pos, randomMaterial.getDefaultState(), 2);
                 changedBlocks++;
             }
@@ -245,12 +255,12 @@ public class DisasterSystem {
 
         shrinkCount++;
 
-        int newMinX = currentMinX + 1;
-        int newMaxX = currentMaxX - 1;
-        int newMinZ = currentMinZ + 1;
-        int newMaxZ = currentMaxZ - 1;
+        int newMinX = currentMinX + 2;
+        int newMaxX = currentMaxX - 2;
+        int newMinZ = currentMinZ + 2;
+        int newMaxZ = currentMaxZ - 2;
 
-        if (newMaxX - newMinX < 3 || newMaxZ - newMinZ < 3) {
+        if (newMaxX - newMinX < 5 || newMaxZ - newMinZ < 5) {
             for (UUID uuid : activePlayers) {
                 ServerPlayerEntity player = getPlayer(uuid);
                 if (player != null) {
@@ -263,8 +273,7 @@ public class DisasterSystem {
 
         for (int x = currentMinX; x <= currentMaxX; x++) {
             for (int z = currentMinZ; z <= currentMaxZ; z++) {
-                boolean isOnBorder = x == currentMinX || x == currentMaxX ||
-                        z == currentMinZ || z == currentMaxZ;
+                boolean isOnBorder = x == currentMinX || x == currentMaxX || z == currentMinZ || z == currentMaxZ;
 
                 if (isOnBorder) {
                     for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
@@ -281,6 +290,9 @@ public class DisasterSystem {
         currentMaxX = newMaxX;
         currentMinZ = newMinZ;
         currentMaxZ = newMaxZ;
+
+        GROUND_MIN = new BlockPos(currentMinX, GROUND_MIN.getY(), currentMinZ);
+        GROUND_MAX = new BlockPos(currentMaxX, GROUND_MAX.getY(), currentMaxZ);
 
         for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
             for (int x = currentMinX; x <= currentMaxX; x++) {
@@ -310,23 +322,23 @@ public class DisasterSystem {
             for (int z = currentMinZ; z <= currentMaxZ; z++) {
                 BlockPos leftEdge = new BlockPos(currentMinX, y, z);
                 BlockPos rightEdge = new BlockPos(currentMaxX, y, z);
-                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                getWorld().spawnParticles(ParticleTypes.LAVA,
                         leftEdge.getX() + 0.5, leftEdge.getY() + 0.5, leftEdge.getZ() + 0.5,
-                        3, 0.1, 0.1, 0.1, 0);
-                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        5, 0.2, 0.2, 0.2, 0.05);
+                getWorld().spawnParticles(ParticleTypes.LAVA,
                         rightEdge.getX() + 0.5, rightEdge.getY() + 0.5, rightEdge.getZ() + 0.5,
-                        3, 0.1, 0.1, 0.1, 0);
+                        5, 0.2, 0.2, 0.2, 0.05);
             }
 
             for (int x = currentMinX; x <= currentMaxX; x++) {
                 BlockPos frontEdge = new BlockPos(x, y, currentMinZ);
                 BlockPos backEdge = new BlockPos(x, y, currentMaxZ);
-                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                getWorld().spawnParticles(ParticleTypes.LAVA,
                         frontEdge.getX() + 0.5, frontEdge.getY() + 0.5, frontEdge.getZ() + 0.5,
-                        3, 0.1, 0.1, 0.1, 0);
-                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        5, 0.2, 0.2, 0.2, 0.05);
+                getWorld().spawnParticles(ParticleTypes.LAVA,
                         backEdge.getX() + 0.5, backEdge.getY() + 0.5, backEdge.getZ() + 0.5,
-                        3, 0.1, 0.1, 0.1, 0);
+                        5, 0.2, 0.2, 0.2, 0.05);
             }
         }
 
@@ -344,9 +356,12 @@ public class DisasterSystem {
 
     public static void resetShrink() {
         shrinkCount = 0;
-        currentMinX = GROUND_MIN.getX();
-        currentMaxX = GROUND_MAX.getX();
-        currentMinZ = GROUND_MIN.getZ();
-        currentMaxZ = GROUND_MAX.getZ();
+        currentMinX = -40;
+        currentMaxX = 40;
+        currentMinZ = -40;
+        currentMaxZ = 40;
+
+        GROUND_MIN = new BlockPos(-40, 64, -40);
+        GROUND_MAX = new BlockPos(40, 64, 40);
     }
 }

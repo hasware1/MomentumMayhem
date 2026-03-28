@@ -1,6 +1,5 @@
 package MomentumMayhem.game;
 
-
 import MomentumMayhem.systems.DisasterSystem;
 import MomentumMayhem.systems.ItemBuilder;
 import MomentumMayhem.util.TaskScheduler;
@@ -38,7 +37,6 @@ import static MomentumMayhem.util.HelperMethods.*;
 
 public class GameManager {
 
-
     public enum GameState {
         STARTING,
         WAITING,
@@ -48,22 +46,16 @@ public class GameManager {
 
     private static MinecraftServer Server;
     private static ServerWorld World;
-    public static MinecraftServer getServer(){return Server;}
-    public static ServerWorld getWorld(){return World;}
+    public static MinecraftServer getServer() { return Server; }
+    public static ServerWorld getWorld() { return World; }
 
     public static GameState state;
 
     public static Set<UUID> players = new HashSet<>();
     public static Set<UUID> activePlayers = new HashSet<>();
 
-    public static final Map<UUID, PlayerData> playerData = new HashMap<>();
-    public static PlayerData getData(ServerPlayerEntity player) {
-        return playerData.get(player.getUuid());
-    }
-
     private static ScheduledTask timeLimitTask;
 
-    private static int currentTick;
     public static final ServerBossBar DisasterBar = new ServerBossBar(Text.literal("").formatted(Formatting.GOLD), BossBar.Color.YELLOW, BossBar.Style.PROGRESS);
 
     public static void init() {
@@ -79,32 +71,24 @@ public class GameManager {
 
     public static void tick(MinecraftServer server) {
         if (state == GameState.RUNNING) {
-            currentTick++;
-            if (activePlayers.size() <= 1){
+            if (activePlayers.size() <= 1) {
                 endGame();
             }
             for (UUID uuid : activePlayers) {
                 ServerPlayerEntity player = getPlayer(uuid);
-                if (player.getY() < VOID_Y){
+                if (player.getY() < VOID_Y) {
                     player.damage(World, World.getDamageSources().outOfWorld(), 9999);
                 }
-                PlayerData playerData = getData(player);
 
-                playerData.messages.set(1, " Health: " + String.format("%.2f", player.getHealth()*5) + "%");
-                List<String> messages = playerData.messages;
-
-                playerData.message = Text.literal(messages.getFirst()).formatted(Formatting.YELLOW, Formatting.BOLD)
-                        .append(Text.literal(messages.get(1)).formatted(Formatting.GREEN, Formatting.BOLD))
-                        .append(Text.literal(messages.get(2)).formatted(Formatting.BLUE, Formatting.BOLD));
-
-                player.sendMessage(playerData.message, true);
+                float healthPercent = player.getHealth() / player.getMaxHealth();
+                int xpPoints = (int) (healthPercent * 100);
+                player.setExperiencePoints(xpPoints);
+                player.setExperienceLevel((int) Math.ceil(player.getHealth()));
             }
         }
-
     }
 
     public static void startGame() {
-        currentTick = 0;
         state = GameState.RUNNING;
 
         for (UUID uuid : players) {
@@ -120,6 +104,7 @@ public class GameManager {
         resetShrink();
         clearAllEntities();
         DisasterSystem.start();
+
         int i = 0;
         for (UUID uuid : players) {
             double angle = 2 * Math.PI * i / players.size();
@@ -132,8 +117,10 @@ public class GameManager {
             sendSound(player, SoundEvents.ENTITY_ENDER_DRAGON_AMBIENT);
             i++;
         }
-        timeLimitTask = TaskScheduler.schedule(x-> endGame(), MAX_TIME, 1, false,  null);
+
+        timeLimitTask = TaskScheduler.schedule(x -> endGame(), MAX_TIME, 1, false, null);
     }
+
     public static void endGame() {
         state = GameState.ENDING;
         TaskScheduler.remove(timeLimitTask);
@@ -157,10 +144,11 @@ public class GameManager {
                     player.sendMessage(Text.literal("| Times Up! |").formatted(Formatting.RED, Formatting.BOLD));
                     player.sendMessage(Text.literal("==========").formatted(Formatting.RED, Formatting.BOLD));
                 }
-            } else {toLobby(getPlayer(winnerUUID));}
+            } else {
+                toLobby(getPlayer(winnerUUID));
+            }
 
             ServerPlayerEntity winner = getPlayer(winnerUUID);
-
             sendSound(winner, SoundEvents.ENTITY_PLAYER_LEVELUP);
             sendTitle(winner, "YOU WON!", Formatting.GREEN);
 
@@ -177,18 +165,18 @@ public class GameManager {
                         .append(Text.literal(" won the game!").formatted(Formatting.GOLD)));
                 getPlayer(uuid).sendMessage(Text.literal("==========================").formatted(Formatting.YELLOW, Formatting.BOLD));
             }
-            TaskScheduler.schedule((x) -> {
-            }, 2 * 20, 1, false, null);
+
+            TaskScheduler.schedule((x) -> {}, 2 * 20, 1, false, null);
         }
+
         state = GameState.WAITING;
         updateDisasterBar();
     }
 
     public static void toArena(ServerPlayerEntity player, Vec3i pos) {
         activePlayers.add(player.getUuid());
-        playerData.put(player.getUuid(), new PlayerData());
 
-        sendTitle(player, "GO!", Formatting.RED);
+        sendTitle(player, "FIGHT!", Formatting.RED);
         player.changeGameMode(GameMode.SURVIVAL);
         player.heal(20);
         player.getInventory().clear();
@@ -196,10 +184,10 @@ public class GameManager {
         player.lookAt(EntityAnchorArgumentType.EntityAnchor.EYES, Vec3d.of(ARENA_POS));
 
         int color = Color.HSBtoRGB((float) Math.random(), 0.9f, 0.9f);
-        player.equipStack(EquipmentSlot.HEAD,  new ItemBuilder(Items.LEATHER_HELMET, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
-        player.equipStack(EquipmentSlot.CHEST,  new ItemBuilder(Items.LEATHER_CHESTPLATE, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
-        player.equipStack(EquipmentSlot.LEGS,  new ItemBuilder(Items.LEATHER_LEGGINGS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
-        player.equipStack(EquipmentSlot.FEET,  new ItemBuilder(Items.LEATHER_BOOTS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
+        player.equipStack(EquipmentSlot.HEAD, new ItemBuilder(Items.LEATHER_HELMET, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
+        player.equipStack(EquipmentSlot.CHEST, new ItemBuilder(Items.LEATHER_CHESTPLATE, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
+        player.equipStack(EquipmentSlot.LEGS, new ItemBuilder(Items.LEATHER_LEGGINGS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
+        player.equipStack(EquipmentSlot.FEET, new ItemBuilder(Items.LEATHER_BOOTS, 1).maxDura(30).withComponent(DataComponentTypes.DYED_COLOR, new DyedColorComponent(color)).build());
 
         List<String> names = List.of(
                 "Yeet", "Bonk", "Boop", "WACK", "Fling",
@@ -219,36 +207,29 @@ public class GameManager {
 
     public static void toLobby(ServerPlayerEntity player) {
         activePlayers.remove(player.getUuid());
-        playerData.remove(player.getUuid());
         player.sendMessage(Text.literal(""), true);
         player.heal(20);
         player.clearStatusEffects();
-        player.addStatusEffect(new StatusEffectInstance(
-                StatusEffects.SATURATION, -1, 0, false, false));
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, -1, 0, false, false));
         player.setFireTicks(0);
-        player.teleport(
-                GameConfig.LOBBY_POS.getX() + 0.5,
-                GameConfig.LOBBY_POS.getY(),
-                GameConfig.LOBBY_POS.getZ() + 0.5,
-                false
-        );
+        player.teleport(LOBBY_POS.getX() + 0.5, LOBBY_POS.getY(), LOBBY_POS.getZ() + 0.5, false);
         player.getInventory().clear();
         player.changeGameMode(GameMode.SURVIVAL);
     }
 
-    public static void updateDisasterBar(){
+    public static void updateDisasterBar() {
         DisasterBar.clearPlayers();
         for (UUID uuid : players) {
             if (state == GameState.RUNNING) {
                 DisasterBar.addPlayer(getPlayer(uuid));
-            } else{
+            } else {
                 DisasterBar.removePlayer(getPlayer(uuid));
             }
         }
     }
 
     public static void showDisaster(String disasterName) {
-        DisasterBar.setName(Text.literal("⚡ " + disasterName + " ⚡").formatted(Formatting.GOLD, Formatting.BOLD));
+        DisasterBar.setName(Text.literal(disasterName).formatted(Formatting.GOLD, Formatting.BOLD));
     }
 
     public static void clearDisaster() {

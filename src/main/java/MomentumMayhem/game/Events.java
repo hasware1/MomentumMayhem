@@ -27,9 +27,9 @@ import static MomentumMayhem.game.GameConfig.MIN_PLAYERS;
 import static MomentumMayhem.game.GameManager.*;
 import static MomentumMayhem.util.HelperMethods.*;
 
-
 public class Events {
     public static void register() {
+
         ServerPlayerEvents.JOIN.register((player) -> {
             players.add(player.getUuid());
             updateDisasterBar();
@@ -47,12 +47,11 @@ public class Events {
             }
             players.remove(player.getUuid());
             activePlayers.remove(player.getUuid());
-            playerData.remove(player.getUuid());
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity instanceof ServerPlayerEntity) {
-                for (UUID uuid: players){
+                for (UUID uuid : players) {
                     sendSound(getPlayer(uuid), SoundEvents.ENTITY_WITHER_SPAWN);
                 }
             }
@@ -63,11 +62,11 @@ public class Events {
             sendTitle(newplayer, "You Died", Formatting.RED);
         });
 
-        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount)->{
-            if (entity instanceof ServerPlayerEntity player && !source.isOf(DamageTypes.GENERIC_KILL)){
-                if (state == GameState.RUNNING){
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof ServerPlayerEntity player && !source.isOf(DamageTypes.GENERIC_KILL)) {
+                if (state == GameState.RUNNING) {
                     return activePlayers.contains(player.getUuid());
-                }else{
+                } else {
                     return false;
                 }
             }
@@ -75,35 +74,31 @@ public class Events {
         });
 
         UseBlockCallback.EVENT.register(((player, world, hand, hitResult) -> {
-            if (hand != Hand.MAIN_HAND || world.isClient()){
+            if (hand != Hand.MAIN_HAND || world.isClient()) {
                 return ActionResult.PASS;
             }
+
             BlockPos pos = hitResult.getBlockPos();
-            if (pos.equals(GameConfig.START_BUTTON) && world.getBlockState(pos).getBlock() == Blocks.WARPED_BUTTON && !world.getBlockState(pos).get(Properties.POWERED)){
+            if (pos.equals(GameConfig.START_BUTTON) && world.getBlockState(pos).getBlock() == Blocks.WARPED_BUTTON && !world.getBlockState(pos).get(Properties.POWERED)) {
                 ServerWorld serverWorld = (ServerWorld) world;
-                serverWorld.spawnParticles(
-                        ParticleTypes.FLAME,
-                        pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                        30,
-                        0.3, 0.3, 0.3,
-                        0.05
-                );
+                serverWorld.spawnParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 30, 0.3, 0.3, 0.3, 0.05);
+
+                ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+
                 if (state != GameState.WAITING) {
-                    ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
                     sendTitle(serverPlayer, "GAME ALREADY RUNNING!", Formatting.GREEN);
                     sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
                 } else if (players.size() < MIN_PLAYERS) {
-                    ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
                     sendTitle(serverPlayer, "NOT ENOUGH PLAYERS!", Formatting.RED);
                     sendSound(serverPlayer, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value());
-                    serverPlayer.sendMessage(Text.literal("Need " + MIN_PLAYERS + " players to start. Current: " + players.size())
+                    serverPlayer.sendMessage(Text.literal("Need " + MIN_PLAYERS + " players. Current: " + players.size())
                             .formatted(Formatting.YELLOW), true);
                 } else {
                     state = GameState.STARTING;
                     TaskScheduler.schedule((int x) -> {
-                        for (UUID uuid: players){
-                            if (x != 3){
-                                sendTitle(getPlayer(uuid), String.valueOf(3-x), Formatting.YELLOW);
+                        for (UUID uuid : players) {
+                            if (x != 3) {
+                                sendTitle(getPlayer(uuid), String.valueOf(3 - x), Formatting.YELLOW);
                                 sendSound(getPlayer(uuid), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value());
                             }
                         }
@@ -113,11 +108,11 @@ public class Events {
             return ActionResult.PASS;
         }));
 
-        PlayerBlockBreakEvents.BEFORE.register((world, player, blockPos, state, entity)->{
-            if (player.getGameMode() == GameMode.CREATIVE){return true;}
+        PlayerBlockBreakEvents.BEFORE.register((world, player, blockPos, state, entity) -> {
+            if (player.getGameMode() == GameMode.CREATIVE) {
+                return true;
+            }
             return BREAKABLE_BLOCKS.contains(state.getBlock());
         });
-
-
     }
 }

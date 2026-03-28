@@ -15,10 +15,12 @@ public class TaskScheduler {
     }
 
     public static ScheduledTask schedule(IntConsumer runnable, int delayTicks, int runs, boolean runFirst, Runnable onEnd) {
-        if (runFirst){runs--;}
-        ScheduledTask task = new ScheduledTask(runnable, delayTicks, runs,  runFirst, onEnd);
+        if (runFirst) {
+            runs--;
+        }
+        ScheduledTask task = new ScheduledTask(runnable, delayTicks, runs, onEnd);
         tasks.add(task);
-        if (runFirst){
+        if (runFirst) {
             runnable.accept(0);
         }
         return task;
@@ -36,7 +38,6 @@ public class TaskScheduler {
 
             if (task.ticksLeft <= 0) {
                 task.runnable.accept(task.currentRun);
-
                 task.ticksLeft = task.delayTicks;
 
                 if (task.runs < 0 || task.currentRun < task.runs) {
@@ -50,8 +51,9 @@ public class TaskScheduler {
             }
         }
     }
+
     public static void remove(ScheduledTask task) {
-        if (task != null && tasks.contains(task)){
+        if (task != null && tasks.contains(task)) {
             task.cancelled = true;
             tasks.remove(task);
         }
@@ -65,7 +67,8 @@ public class TaskScheduler {
         public int currentRun;
         public boolean cancelled;
         public Runnable onEnd;
-        public ScheduledTask(IntConsumer runnable, int delayTicks, int runs, boolean runFirst, Runnable onEnd) {
+
+        public ScheduledTask(IntConsumer runnable, int delayTicks, int runs, Runnable onEnd) {
             this.runnable = runnable;
             this.delayTicks = delayTicks;
             this.ticksLeft = delayTicks;
