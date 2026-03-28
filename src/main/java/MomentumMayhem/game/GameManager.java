@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.List;
 
 import static MomentumMayhem.game.GameConfig.*;
+import static MomentumMayhem.systems.DisasterSystem.resetShrink;
 import static MomentumMayhem.util.HelperMethods.*;
 
 public class GameManager {
@@ -116,6 +117,7 @@ public class GameManager {
 
         updateDisasterBar();
         resetArena();
+        resetShrink();
         clearAllEntities();
         DisasterSystem.start();
         int i = 0;

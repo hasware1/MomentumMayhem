@@ -4,6 +4,8 @@ import MomentumMayhem.game.GameManager;
 import MomentumMayhem.util.TaskScheduler;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -60,7 +62,7 @@ public class DisasterSystem {
                 ServerPlayerEntity player = getPlayer(uuid);
                 if (player != null) {
                     if (x == 4) {
-                        sendTitle(player, "⚠️ " + name + " ⚠️", Formatting.RED);
+                        sendTitle(player, " " + name + " ", Formatting.RED);
                         sendSound(player, SoundEvents.BLOCK_TRIAL_SPAWNER_OMINOUS_ACTIVATE);
                     } else if (x == 3) {
                         sendTitle(player, "3", Formatting.YELLOW);
@@ -76,27 +78,28 @@ public class DisasterSystem {
             }
         }, 20, 5, true, () -> {
             disaster.run();
-
             GameManager.showDisaster(name);
-
             TaskScheduler.schedule((int y) -> {
                 GameManager.clearDisaster();
             }, 10 * 20, 1, false, null);
         });
     }
+
     private static void lowGravity() {
         if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
                 player.setNoGravity(true);
-
                 TaskScheduler.schedule((int x) -> {
                     player.setNoGravity(false);
                 }, 10 * 20, 1, false, null);
 
-                player.sendMessage(Text.literal("☁️ LOW GRAVITY! ☁️")
-                        .formatted(Formatting.AQUA, Formatting.BOLD), true);
+                getWorld().spawnParticles(ParticleTypes.CLOUD,
+                        player.getX(), player.getY() + 0.5, player.getZ(),
+                        20, 0.5, 1.0, 0.5, 0.05);
+
+                sendTitle(player, "LOW GRAVITY", Formatting.AQUA);
                 sendSound(player, SoundEvents.ENTITY_PLAYER_TELEPORT);
             }
         }
@@ -113,8 +116,11 @@ public class DisasterSystem {
                     }
                 }, 0, 10 * 20, true, null);
 
-                player.sendMessage(Text.literal(" HIGH GRAVITY! ")
-                        .formatted(Formatting.DARK_RED, Formatting.BOLD), true);
+                getWorld().spawnParticles(new BlockStateParticleEffect(ParticleTypes.FALLING_DUST, Blocks.SAND.getDefaultState()),
+                        player.getX(), player.getY() + 1.0, player.getZ(),
+                        15, 0.3, 0.5, 0.3, 0.1);
+
+                sendTitle(player, "HIGH GRAVITY", Formatting.DARK_RED);
                 sendSound(player, SoundEvents.BLOCK_ANVIL_LAND);
             }
         }
@@ -132,20 +138,22 @@ public class DisasterSystem {
                             -0.7,
                             EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
                     );
-
                     speedAttribute.addTemporaryModifier(modifier);
-
                     TaskScheduler.schedule((int x) -> {
                         speedAttribute.removeModifier(modifier);
                     }, 10 * 20, 1, false, null);
                 }
 
-                player.sendMessage(Text.literal(" LOW SPEED! ")
-                        .formatted(Formatting.GRAY, Formatting.BOLD), true);
+                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        player.getX(), player.getY() + 0.2, player.getZ(),
+                        10, 0.3, 0.1, 0.3, 0.02);
+
+                sendTitle(player, "LOW SPEED", Formatting.GRAY);
                 sendSound(player, SoundEvents.ENTITY_TURTLE_EGG_HATCH);
             }
         }
     }
+
     private static void highSpeed() {
         if (state != GameState.RUNNING) return;
         for (UUID uuid : activePlayers) {
@@ -158,16 +166,17 @@ public class DisasterSystem {
                             0.7,
                             EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
                     );
-
                     speedAttribute.addTemporaryModifier(modifier);
-
                     TaskScheduler.schedule((int x) -> {
                         speedAttribute.removeModifier(modifier);
                     }, 10 * 20, 1, false, null);
                 }
 
-                player.sendMessage(Text.literal(" HIGH SPEED! ")
-                        .formatted(Formatting.GREEN, Formatting.BOLD), true);
+                getWorld().spawnParticles(ParticleTypes.SWEEP_ATTACK,
+                        player.getX() - player.getVelocity().x, player.getY() + 0.5, player.getZ() - player.getVelocity().z,
+                        3, 0.2, 0.2, 0.2, 0);
+
+                sendTitle(player, "HIGH SPEED", Formatting.GREEN);
                 sendSound(player, SoundEvents.ENTITY_HORSE_GALLOP);
             }
         }
@@ -213,14 +222,14 @@ public class DisasterSystem {
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.sendMessage(Text.literal("FLOOR SWAP! Ground changed to " + materialName + "! ")
-                        .formatted(Formatting.GOLD, Formatting.BOLD), true);
+                sendTitle(player, "FLOOR SWAP: " + materialName, Formatting.GOLD);
                 sendSound(player, SoundEvents.BLOCK_STONE_BREAK);
             }
         }
 
         System.out.println("Floor Swap: Changed " + changedBlocks + " blocks to " + materialName);
     }
+
     private static int shrinkCount = 0;
     private static int currentMinX, currentMaxX, currentMinZ, currentMaxZ;
 
@@ -245,8 +254,7 @@ public class DisasterSystem {
             for (UUID uuid : activePlayers) {
                 ServerPlayerEntity player = getPlayer(uuid);
                 if (player != null) {
-                    player.sendMessage(Text.literal("SUDDEN DEATH! Final stand!")
-                            .formatted(Formatting.DARK_RED, Formatting.BOLD), true);
+                    sendTitle(player, "SUDDEN DEATH", Formatting.DARK_RED);
                     sendSound(player, SoundEvents.ENTITY_WITHER_SPAWN);
                 }
             }
@@ -298,11 +306,34 @@ public class DisasterSystem {
             }
         }
 
+        for (int y = GROUND_MIN.getY(); y <= GROUND_MAX.getY(); y++) {
+            for (int z = currentMinZ; z <= currentMaxZ; z++) {
+                BlockPos leftEdge = new BlockPos(currentMinX, y, z);
+                BlockPos rightEdge = new BlockPos(currentMaxX, y, z);
+                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        leftEdge.getX() + 0.5, leftEdge.getY() + 0.5, leftEdge.getZ() + 0.5,
+                        3, 0.1, 0.1, 0.1, 0);
+                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        rightEdge.getX() + 0.5, rightEdge.getY() + 0.5, rightEdge.getZ() + 0.5,
+                        3, 0.1, 0.1, 0.1, 0);
+            }
+
+            for (int x = currentMinX; x <= currentMaxX; x++) {
+                BlockPos frontEdge = new BlockPos(x, y, currentMinZ);
+                BlockPos backEdge = new BlockPos(x, y, currentMaxZ);
+                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        frontEdge.getX() + 0.5, frontEdge.getY() + 0.5, frontEdge.getZ() + 0.5,
+                        3, 0.1, 0.1, 0.1, 0);
+                getWorld().spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR,
+                        backEdge.getX() + 0.5, backEdge.getY() + 0.5, backEdge.getZ() + 0.5,
+                        3, 0.1, 0.1, 0.1, 0);
+            }
+        }
+
         for (UUID uuid : activePlayers) {
             ServerPlayerEntity player = getPlayer(uuid);
             if (player != null) {
-                player.sendMessage(Text.literal("GROUND SHRINKING! " + shrinkCount + " layers removed!")
-                        .formatted(Formatting.RED, Formatting.BOLD), true);
+                sendTitle(player, "GROUND SHRINKING", Formatting.RED);
                 sendSound(player, SoundEvents.BLOCK_ANVIL_LAND);
             }
         }
@@ -310,6 +341,7 @@ public class DisasterSystem {
         System.out.println("Ground shrunk to: X[" + currentMinX + " to " + currentMaxX +
                 "] Z[" + currentMinZ + " to " + currentMaxZ + "]");
     }
+
     public static void resetShrink() {
         shrinkCount = 0;
         currentMinX = GROUND_MIN.getX();
